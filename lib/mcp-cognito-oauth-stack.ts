@@ -1,51 +1,43 @@
 import * as cdk from "aws-cdk-lib";
-import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
-import * as integrations from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as logs from "aws-cdk-lib/aws-logs";
 import { Construct } from "constructs";
-import { PythonFunction } from "@aws-cdk/aws-lambda-python-alpha";
+import { McpCognitoOauthFunction } from "./constructs/lambda-function";
+import { McpCognitoOauthHttpApi } from "./constructs/http-api";
+
+interface McpCognitoOauthStackProps extends cdk.StackProps {
+  readonly functionTimeout?: cdk.Duration;
+  readonly logRetention?: logs.RetentionDays;
+}
 
 export class McpCognitoOauthStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  public readonly httpApiUrl: string;
+  public readonly lambdaFunction: lambda.Function;
+
+  constructor(scope: Construct, id: string, props?: McpCognitoOauthStackProps) {
     super(scope, id, props);
 
-    const fn = new PythonFunction(this, "McpCognitoOauthFunction", {
-      entry: "lambda",
-      index: "app.py",
-      runtime: cdk.aws_lambda.Runtime.PYTHON_3_12,
-      handler: "handler",
-      functionName: "mcp-function",
-      architecture: cdk.aws_lambda.Architecture.X86_64,
-      description: "MCP Server for Cognito OAuth",
+    const lambdaConstruct = new McpCognitoOauthFunction(this, "McpCognitoOauthFunction", {
+      functionTimeout: props?.functionTimeout,
+      logRetention: props?.logRetention,
     });
+    this.lambdaFunction = lambdaConstruct.function;
 
-    // APIGW
-    const httpApi = new apigwv2.HttpApi(this, "McpCognitoOauthHttpApi", {
-      corsPreflight: {
-        allowOrigins: ["*"],
-        allowMethods: [
-          apigwv2.CorsHttpMethod.GET,
-          apigwv2.CorsHttpMethod.POST,
-          apigwv2.CorsHttpMethod.PUT,
-          apigwv2.CorsHttpMethod.DELETE,
-          apigwv2.CorsHttpMethod.OPTIONS,
-        ],
-        allowHeaders: ["*"],
-      },
+    const httpApiConstruct = new McpCognitoOauthHttpApi(this, "McpCognitoOauthHttpApi", {
+      lambdaFunction: this.lambdaFunction,
     });
-
-    const integ = new integrations.HttpLambdaIntegration(
-      "McpCognitoOauthHttpApiIntegration",
-      fn
-    );
-    httpApi.addRoutes({
-      path: "/{proxy+}",
-      methods: [apigwv2.HttpMethod.ANY],
-      integration: integ,
-    });
+    this.httpApiUrl = httpApiConstruct.url;
 
     new cdk.CfnOutput(this, "HttpApiUrl", {
-      value: httpApi.url ?? "",
-      description: "HTTP API URL",
+      value: this.httpApiUrl,
+      description: "HTTP API URL for MCP Cognito OAuth",
+      exportName: `${this.stackName}-HttpApiUrl`,
+    });
+
+    new cdk.CfnOutput(this, "LambdaFunctionArn", {
+      value: this.lambdaFunction.functionArn,
+      description: "Lambda Function ARN",
+      exportName: `${this.stackName}-LambdaFunctionArn`,
     });
   }
 }
