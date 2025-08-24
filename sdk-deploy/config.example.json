@@ -1,0 +1,9 @@
+{
+  "gateway_name": "mcp-bedrock-agentcore-gateway",
+  "description": "Bedrock AgentCore Gateway for MCP tools with OAuth authentication",
+  "cognito_user_pool_id": "us-west-2_XXXXXXXXX",
+  "cognito_client_id": "xxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "cognito_domain": "mcp-bedrock-auth.auth.us-west-2.amazoncognito.com",
+  "lambda_function_arn": "arn:aws:lambda:us-west-2:123456789012:function:McpCognitoOauthStack-McpCognitoOauthFunctionXXXXXXXX",
+  "region": "us-west-2"
+}

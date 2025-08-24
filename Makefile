@@ -15,3 +15,6 @@ deploy-check:
 # デプロイの削除
 destroy:
 	cdk destroy --profile $(AWS_PROFILE)
+
+diff:
+	cdk diff --profile $(AWS_PROFILE)

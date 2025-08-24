@@ -1,3 +1,3 @@
 # やること
 
-## strand agents で MCP サーバを作成する。
+## Cognito を作成する
